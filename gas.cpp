@@ -35,6 +35,8 @@ main(int const argc, char const *argv[])
     int const nnd = nel + 1;
 
     using ptr = std::unique_ptr<double[]>;
+    // std::vector<double> ndx(nnd, 0.0);
+
 
     ptr ndx(new double[nnd]);       // node positions
     ptr ndx05(new double[nnd]);     // half-step node positions

@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 
 # Configuration
 executable = "./gas"    # path to your compiled program
-num_cells = 25000      # 100k cells
-max_threads = 10
-csv_file = "profiling/performance.csv"
+num_cells = 75000      # cells
+max_threads = 40
+csv_file = "var_thread/varthreads.csv"
 
 threads_list = []
 times_list = []
