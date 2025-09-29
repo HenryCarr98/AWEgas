@@ -84,6 +84,10 @@ main(int const argc, char const *argv[])
     // discretisation to solve the compressible Euler equations.
     int istep = 1;
     double t = 0.0, dt = 1.0e-6;
+
+    // Start timer
+    double t0 = omp_get_wtime();
+
     while (t < 0.25) {
         // Calculate artificial viscosity (Q) and minimum CFL condition.
         double min_cfl = std::numeric_limits<double>::max();
@@ -175,10 +179,18 @@ main(int const argc, char const *argv[])
         istep++;
     }
 
-    // // XXX --- Uncomment this line to write density data to stdout. ---
+
+    // End timer 
+    double tf = omp_get_wtime();
+    double elapsed = tf - t0;
+
+    // Print elapsed time 
+    // std::cout << "#ELAPSED_TIME " << elapsed << "\n";
+
+    // // XXX Uncomment this line to write density data to stdout.
     plot(nel, ndx.get(), elrho.get());
 
-    // XXX --- Write density data to a file in the data folder ---
+    // XXX Write density data to a file in the data folder
     // std::ofstream outfile("data/density_output.txt");
     // if (outfile.is_open()) {
     //     plot(nel, ndx.get(), elrho.get(), outfile); // You may need to overload plot to accept std::ostream&

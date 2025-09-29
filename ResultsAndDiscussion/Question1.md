@@ -24,6 +24,8 @@ Disclaimer: this document gives a brief overview of the changes made to the algo
   - Interconnected via **Mellanox NDR200 InfiniBand**.  
 - **Operating System:** Running **Rocky Linux 8**, a rebuild of **Red Hat Enterprise Linux 8 (RHEL8)**.  
 
+> All runs used the above setup with cpu socket binding to minimise communication delays. 
+
 
 ## Overview of the Code
 

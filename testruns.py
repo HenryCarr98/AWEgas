@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 # Configuration
 executable = "./gas"    # path to your compiled program
-num_cells = 75000      # cells
-max_threads = 40
+num_cells = 100000      # cells
+max_threads = 28
 csv_file = "var_thread/varthreads.csv"
 
 threads_list = []
