@@ -41,6 +41,8 @@ For loops where each iteration wrote to distinct array elements, we applied `#pr
 
 For loops computing global aggregates, like the `minimum CFL condition`, we used `#pragma omp parallel for reduction(min:...)` to safely combine thread-local results without race conditions. 
 
+- [x] Loops were identified as independent if iterations wrote only to separate memory locations. Shared writes were avoided to prevent race conditions. Array access patterns were examined to minimise false sharing.
+
 > Definition: 
 > CFL = Courant–Friedrichs–Lewy condition.
 
