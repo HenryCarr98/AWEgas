@@ -23,7 +23,7 @@ Disclaimer: this document gives a brief overview of the changes made to the algo
 3 main areas: 
 
 1. Lack of Parallelisation. All loops over nodes and cells were executed sequentially.  
-   1. Problem: For large meshes (e.g., 100k cells), this led to unnecessarily long runtimes on modern multi-core CPUs. Why it mattered: Computational loops like initialization, time-stepping, and CFL calculations are embarrassingly parallel. Not exploiting this wastes available hardware resources.
+   1. Problem: For large meshes (e.g., 100k cells), this led to unnecessarily long runtimes on modern multi-core CPUs. Why it mattered: Computational loops like initialisation, time-stepping, and CFL calculations are embarrassingly parallel. Not exploiting this wastes available hardware resources.
 
 1. Unsafe or Inefficient Output. Density output was printed directly to stdout. 
    1. Problem: For large meshes, this clutters the console and slows execution due to I/O bottlenecks. Why it mattered: Simulation output should be reproducible, structured, and separated from the console to allow automated post-processing and plotting.
@@ -35,7 +35,7 @@ Disclaimer: this document gives a brief overview of the changes made to the algo
 
 ## Parallelisation
 
-I systematically analyzed all loops over cells and nodes to identify those that were independent and safe to parallelise. 
+I systematically analysed all loops over cells and nodes to identify those that were independent and safe to parallelise. 
 
 For loops where each iteration wrote to distinct array elements, we applied `#pragma omp` parallel for to execute iterations concurrently. 
 
@@ -44,7 +44,7 @@ For loops computing global aggregates, like the `minimum CFL condition`, we used
 > Definition: 
 > CFL = Courant–Friedrichs–Lewy condition.
 
-Loops with sequential dependencies, such as the corrector step updating nodal velocities, were intentionally left serial to maintain correctness. This approach maximized concurrency while avoiding synchronization overhead and false sharing, resulting in significant runtime improvements on multi-core CPUs.
+Loops with sequential dependencies, such as the corrector step updating nodal velocities, were intentionally left serial to maintain correctness. This approach maximised concurrency while avoiding synchronisation overhead and false sharing, resulting in significant runtime improvements on multi-core CPUs.
 
 
 ### Why were some loops were left serial?
@@ -63,6 +63,8 @@ for (int ind = 0; ind < nnd; ind++) {
 - If we parallelised this naively, threads could read stale values or overwrite each other, producing incorrect physics.
 
 - Decision: Leave these loops serial to ensure numerical correctness. In other words, some calculations are inherently sequential due to data dependencies.
+
+- [x] The factor `0.5` keeps the timestep well below the stability limit.
 
 ### Why did we use `#pragma omp parallel for reduction(min:min_cfl)`?
 
