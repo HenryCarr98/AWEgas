@@ -89,12 +89,13 @@ To quantify the impact of OpenMP parallelisation on the solver’s performance, 
 
    * Thread count
    * Execution time (is `time.perf_counter()` correct?)
-   * Minimum CFL timestep
+   * Explain workflow
 2. Plots:
 
    * Density profile comparison (Serial vs Parallel)
    * Execution time vs thread count (scaling curve)
    * Optional: timestep evolution vs simulation time
    * Amdahl’s Law over the top I think? $Speedup = t_1/t_{cpumax}$
+     * Linear regression? 
 
 
