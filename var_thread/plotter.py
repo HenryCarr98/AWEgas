@@ -19,7 +19,7 @@ plt.plot(xs, ys, marker="o", linestyle="-", color="b")
 
 plt.xlabel("Threads")
 plt.ylabel("Execution Time (s)")
-plt.title("Execution Time vs Threads for 100,000 cells")
+plt.title("Execution Time vs Threads for fixed cells")
 plt.grid(True)
 
 # Save plot
