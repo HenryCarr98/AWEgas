@@ -1,6 +1,11 @@
 - [Testing and optimising the performance of the numerical scheme](#testing-and-optimising-the-performance-of-the-numerical-scheme)
   - [Scaling analysis](#scaling-analysis)
-- [Determining efficiency of the code](#determining-efficiency-of-the-code)
+  - [Strong scaling](#strong-scaling)
+    - [Determining efficiency of the code](#determining-efficiency-of-the-code)
+    - [Determining *speedup* of the code](#determining-speedup-of-the-code)
+    - [Applying Amdahl's Law](#applying-amdahls-law)
+      - [Fitting execution time to Amdahl's Law](#fitting-execution-time-to-amdahls-law)
+  - [Weak Scaling](#weak-scaling)
 
 # Testing and optimising the performance of the numerical scheme
 
@@ -35,7 +40,9 @@ There are many ways to measure the time of execution however for the sake of sim
 5. Measure wallclock execution time
 6. Write to csv.
 
-# Determining efficiency of the code
+## Strong scaling
+
+### Determining efficiency of the code
 
 The easiest and most logical method available to us is to simply run the code for an array of different thread counts whilst keeping the number of cells fixed (`100,000` to be precise). From this, one can readily plot execution time as a function of the number of threads as below:
 
@@ -48,121 +55,60 @@ We can readily see that performance (excluding some fluctuations in the order of
 
 One leading cause of this is due to the fact that some of the code can only be executed in serial (we shall estimate this fraction later)- therefore adding more threads will not offer any benefit. One also has to account for the fact that, in terms of computing, this is a relatively small problem and the delays caused by communication overheads between e.g., nodes or the Lustre file system quickly diminish any gains offered by increasing the thread count. 
 
+### Determining *speedup* of the code
+
+We can also compute the *speedup* as a function of the number of threads. It is unsurprising that similarly, the degree at which the code is "sped up" (that is, the total execution time is observed to decrease) steadily reaches a plateu past the 15 cpu thread mark. 
+
+The code *speedup* is determined by comparing the execution time of the program as a ratio of the time taken to execute it in serial (i.e., when the number of threads us unitary). 
+
+We define 
+
+- $T_1 =$ execution time with 1 thread (serial time)
+- $T_{N_t} =$ execution time with $N_t$ threads
+
+The speedup $S(N_t)$ is then defined as:
+
+$$S(N_t) = \frac{T_1}{T_{N_t}}$$
+
+And is plotted below in Fig. 2. It shows that the maximum boost offered by introducing `OpenMP` is approximately a factor of `3`. 
+
 <p align="center">
-<img src="../img/plot100kcellsefficiency.png" alt="drawing" style="width:640px;centered"/>
-<center>Fig. 1: thread count vs execution time. </center>
+<img src="../img/plot100kcells_scaling.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 2: thread count vs speedup. </center>
+
+### Applying Amdahl's Law
+
+Amdahl’s Law is a foundational principle in parallel computing, setting the theoretical upper bound on the maximum degree of *speedup* a given program can achieve when it is parallelised. 
+
+It effectively places a limit on the maximum performance gain in accordance with the fraction of the code that must remain serial, no matter how many processors or threads are added. In practice, if a fraction $f_s$ of the program *cannot* be parallelised, then the maximum speedup with $N$ threads is given by
+
+$$S(N) = \frac{1}{f_s + \frac{1-f_s}{N}}$$
+
+This means that even when $N \to \infty$, the speedup cannot exceed $1/f_s$. 
+
+For example, if just `5%` of a program is inherently serial (i.e., $f_s = 0.05$), the absolute maximum speedup possible is $20\times$, regardless of hardware. Amdahl's Law effectively explains why performance often plateaus beyond a certain thread count (as we have seen), since the serial bottleneck dominates once the parallel portion has been saturated. It underpins the importance of reducing serial regions of code and selecting an appropriate amount of computational resources.
+
+#### Fitting execution time to Amdahl's Law
+
+To understand how well the measured execution times align with the theoretical limits of parallel performance, we fit our data to Amdahl's Law. Amdahl's Law models the execution time $T(N)$ on $N$ threads as:
+
+$$T(N) = T_1 \big[ (1 - f) + \tfrac{f}{N} \big]$$
+
+where:
+
+- $T_1$ is the serial execution time (1 thread),
+- $f$ is the parallel fraction of the code ($0 \leq f \leq 1$),
+- $N$ is the number of threads.
+
+This model assumes that some fraction of the computation is perfectly parallelisable ($f$), while the remainder $(1-f)$ is inherently serial and cannot benefit from additional threads.
+
+In the Python script, we use nonlinear least-squares fitting (`scipy.optimize.curve_fit`) to determine the best-fit values of $f$ and $T_1$ that minimise the difference between measured execution times and the Amdahl model. The workflow proceeds as follows:
+
+<p align="center">
+<img src="../img/Amdahl.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 3: Amdahl''s law plotted against execution time. </center>
+
+We see from this above analysis that the code is approximately `72%` of our workload is parallelisable (can be divided among threads) with `28%` appearing to be inherently serial (must be done on one thread, no matter how many cores are being added).
 
 
-<!-- # Performance Analysis Plan for Sod Shock Tube Solver
-
->[!important]
-> Keep within the bounds of the objective
-> > *Explore performance with varying thread counts and varying problem sizes (within the bounds of compute available to you, if that is only e.g. two or four CPU cores that is not a problem).*
-
-
-## Objective
-
-To quantify the impact of OpenMP parallelisation on the solver’s performance, verify correctness of parallel implementation, and assess numerical stability with respect to timestep control.
-
-
-
-## Step 1: Serial vs Parallel Execution (50k cells)
-
-**Purpose:** Verify correctness of parallelisation and quantify speed-up.
-
-**Procedure:**
-
-1. Set up two runs with `nel = 50,000` cells:
-
-   * **Serial run:** Compile without `-fopenmp` or set `OMP_NUM_THREADS=1`.
-   * **Parallel run:** Compile with OpenMP (`-fopenmp`) and set `OMP_NUM_THREADS=8`.
-2. Record wall-clock runtime using `omp_get_wtime()` or Python wrapper.
-3. Output cell density profiles from both runs.
-4. **Compare solutions:** Plot density vs position (`x`) to ensure parallelisation did not alter results.
-
-**Expected outcome:**
-
-* Parallel run should be faster (ideally ~4–6× speed-up on 8 threads).
-* Density profiles must be numerically identical within floating-point tolerance.
-
-
-
-## Step 2: Scaling and Stability Study
-
-**Purpose:** Measure performance scaling with thread count and observe timestep behaviour.
-
-**Procedure:**
-
-1. Select a fixed problem size (e.g., 50k cells).
-2. Run simulations with different thread counts: `1, 2, 4, 8, 16`.
-3. Record:
-
-   * Wall-clock execution time
-   * Minimum CFL timestep (`min_cfl`) per run
-   * Thread count used
-4. **Analysis:**
-
-   * Plot execution time vs thread count (strong scaling)
-   * Observe how timestep adapts with different parallel configurations
-   * complexity? 
-
-**Expected outcome:**
-
-* Near-linear scaling for the most parallelisable loops.
-* Serial sections (corrector step) will limit speed-up at higher threads.
-* CFL-adapted timestep will remain stable across parallel runs.
-
-
-
-## Step 3: Performance vs Numerical Stability
-
-**Purpose:** Demonstrate that parallelisation does not compromise solver stability.
-
-**Procedure:**
-
-1. Monitor timestep (`dt`) evolution during the simulation.
-2. Ensure that the CFL condition is respected throughout.
-3. Cross-check with serial run: timestep values should be comparable.
-
-**Expected outcome:**
-
-* Parallelisation accelerates computation without affecting timestep selection or numerical correctness.
-* No CFL violations or instabilities should occur.
-
-
-
-## Step 4: Deliverables
-
-1. CSV file logging:
-
-   * Thread count
-   * Execution time (is `time.perf_counter()` correct?)
-   * Explain workflow
-2. Plots:
-
-   * Density profile comparison (Serial vs Parallel)
-   * Execution time vs thread count (scaling curve)
-   * Optional: timestep evolution vs simulation time
-   * Amdahl’s Law over the top I think? $Speedup = t_1/t_{cpumax}$
-     * Linear regression? 
-
-
-15 threads 
-
-cell count:
-
-100
-500
-750
-1000
-2000
-5000
-10000
-25000
-50000
-75000
-100000
-125000
-
-try to test weak scaling
- -->
+## Weak Scaling 
