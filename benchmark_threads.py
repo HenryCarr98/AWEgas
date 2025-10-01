@@ -5,7 +5,7 @@ import time
 
 # Configuration
 executable = "./gas"    # path to your compiled program
-num_cells = 100000      # cells
+num_cells = 125000      # cells
 max_threads = 32
 
 # Dynamic CSV filename based on number of cells

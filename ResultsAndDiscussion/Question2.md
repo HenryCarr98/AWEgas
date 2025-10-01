@@ -1,12 +1,35 @@
-- [Performance Analysis Plan for Sod Shock Tube Solver](#performance-analysis-plan-for-sod-shock-tube-solver)
-  - [Objective](#objective)
-  - [Step 1: Serial vs Parallel Execution (50k cells)](#step-1-serial-vs-parallel-execution-50k-cells)
-  - [Step 2: Scaling and Stability Study](#step-2-scaling-and-stability-study)
-  - [Step 3: Performance vs Numerical Stability](#step-3-performance-vs-numerical-stability)
-  - [Step 4: Deliverables](#step-4-deliverables)
+- [Testing and optimising the performance of the numerical scheme](#testing-and-optimising-the-performance-of-the-numerical-scheme)
+  - [Strong scaling analysis](#strong-scaling-analysis)
+
+# Testing and optimising the performance of the numerical scheme
+
+Now that we are satisfied the code has been suitably parallelised, the task now is to examine its performance as 
+
+- [ ] Cell count remains fixed and thread count is varied (strong scaling)
+- [ ] Cell count is varied and thread count is fixed (at the maximum determined by the strong scaling) also known as "weak scaling"
+
+From this, we can then make estimates of the efficiency, speedup and much more. 
+
+## Strong scaling analysis
+
+One (if not the most) critical aspect of our work involved the determination of the point at which the performance of the code either plateaus or begins to decrease with respect to the number of processor threads allocated to the task. To do this, the code was compiled with the `-fopenmp` flag it was decided to test it with the following parameters 
+
+1. Fixed cell count of `100,000`
+2. Varied thread count from `1` to `32`
+
+There are many ways to measure the time of execution however for the sake of simplicity, we elected to delegate this task to a Python script (please cf. with `benchmark_threads.py`) which made use of the `subprocess` library to handle the execution. This script adopted the following workflow 
+
+1. Define the path to the executable and output files
+2. Initialise the cell count
 
 
-# Performance Analysis Plan for Sod Shock Tube Solver
+Devise an analysis script that 
+
+1. Plots a realisation 
+2. plots thread count vs time
+3. 
+
+<!-- # Performance Analysis Plan for Sod Shock Tube Solver
 
 >[!important]
 > Keep within the bounds of the objective
@@ -57,6 +80,7 @@ To quantify the impact of OpenMP parallelisation on the solver’s performance, 
 
    * Plot execution time vs thread count (strong scaling)
    * Observe how timestep adapts with different parallel configurations
+   * complexity? 
 
 **Expected outcome:**
 
@@ -99,3 +123,22 @@ To quantify the impact of OpenMP parallelisation on the solver’s performance, 
      * Linear regression? 
 
 
+15 threads 
+
+cell count:
+
+100
+500
+750
+1000
+2000
+5000
+10000
+25000
+50000
+75000
+100000
+125000
+
+try to test weak scaling
+ -->

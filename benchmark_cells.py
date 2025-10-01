@@ -2,13 +2,14 @@ import subprocess
 import csv
 import os
 import time
-import matplotlib.pyplot as plt
 
 # Configuration
 executable = "./gas"    # path to your compiled program
 num_cells = 100000      # cells
-max_threads = 28
-csv_file = "var_thread/varthreads.csv"
+num_threads = 14
+
+# Dynamic CSV filename based on number of cells
+csv_file = f"var_cells/varcells_{num_threads}_{num_cells}cells.csv"
 
 threads_list = []
 times_list = []
@@ -16,37 +17,35 @@ times_list = []
 with open(csv_file, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["threads", "execution_time_sec"])
+    f.flush()
 
-    for threads in range(1, max_threads + 1):
+    for threads in range(1, num_threads + 1):
         print(f"Running with {threads} threads...")
 
         # Set OpenMP thread count
         env = os.environ.copy()
         env["OMP_NUM_THREADS"] = str(threads)
 
-        # Use perf_counter for high-resolution timing
+        # # High-resolution timer
+        # start = time.perf_counter()
+        # subprocess.run([executable, str(num_cells)], env=env)
+        # end = time.perf_counter()
+        # elapsed = end - start
+
         start = time.perf_counter()
-        subprocess.run([executable, str(num_cells)], env=env)
+        with open(os.devnull, 'w') as fnull:
+            subprocess.run([executable, str(num_cells)], env=env, stdout=fnull, stderr=fnull)
         end = time.perf_counter()
 
         elapsed = end - start
+        print(elapsed)
 
         writer.writerow([threads, elapsed])
+        f.flush()  # ensure immediate write
+
         threads_list.append(threads)
         times_list.append(elapsed)
 
         print(f"{threads} threads -> {elapsed:.6f} sec")
 
 print(f"CSV saved to {csv_file}")
-
-# # --- Plotting ---
-# plt.figure(figsize=(8,5))
-# plt.plot(threads_list, times_list, marker='o', linestyle='-')
-# plt.xlabel("Number of threads")
-# plt.ylabel("Execution time (seconds)")
-# plt.title(f"Performance scaling for {num_cells} cells")
-# plt.xticks(range(1, max_threads + 1))
-# plt.grid(True)
-# plt.tight_layout()
-# plt.savefig("performance_plot.png")
-# plt.show()

@@ -86,7 +86,7 @@ main(int const argc, char const *argv[])
     double t = 0.0, dt = 1.0e-6;
 
     // Start timer
-    double t0 = omp_get_wtime();
+    // double t0 = omp_get_wtime();
 
     while (t < 0.25) {
         // Calculate artificial viscosity (Q) and minimum CFL condition.
@@ -181,8 +181,8 @@ main(int const argc, char const *argv[])
 
 
     // End timer 
-    double tf = omp_get_wtime();
-    double elapsed = tf - t0;
+    // double tf = omp_get_wtime();
+    // double elapsed = tf - t0;
 
     // Print elapsed time 
     // std::cout << "#ELAPSED_TIME " << elapsed << "\n";
