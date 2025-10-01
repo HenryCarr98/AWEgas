@@ -6,13 +6,14 @@
     - [Applying Amdahl's Law](#applying-amdahls-law)
       - [Fitting execution time to Amdahl's Law](#fitting-execution-time-to-amdahls-law)
   - [Weak Scaling](#weak-scaling)
+- [Summary and conclusion](#summary-and-conclusion)
 
 # Testing and optimising the performance of the numerical scheme
 
 Now that we are satisfied the code has been suitably parallelised, the task now is to examine its performance as 
 
 - [ ] Cell count remains fixed and thread count is varied (strong scaling)
-- [ ] Cell count is varied and thread count is fixed (at the maximum determined by the strong scaling) also known as "weak scaling"
+- [ ] Cell count remains constant but thread count is increased (varied problem size but same cell count per thread) this is known as "weak scaling"
 
 From this, we can then make estimates of the efficiency, speedup and much more. 
 
@@ -132,22 +133,20 @@ Beyond this regime, however, runtime grows more rapidly, displaying a near-expon
 <img src="../img/weakscaling_Efficiency.png" alt="drawing" style="width:640px;centered"/>
 <center>Fig. 5: Efficiency vs. OpenMP threads, with the total number of mesh cells increasing proportionally to maintain a constant workload of 3,125 cells per thread. </center>
 
+The weak scaling efficiency, defined as $E=t_1/t_N$ with $t_1$ the single-thread runtime and $t_N$ the runtime at $N$ threads, exhibits a pronounced decline as the number of threads increases in Figure 5.
 
-<!-- This behaviour is mirrored in the weak scaling efficiency, defined as 
+For a $N=1$, efficiency is naturally, however, with just two threads, efficiency drops sharply to approximately `25%`, reflecting the significant influence of parallel overheads relative to the small per-thread workload of `3,125` cells.
 
-𝐸
-=
-𝑡
-1
-/
-𝑡
-𝑁
-E=t
-1
-	​
+As the thread count continues to rise, efficiency decreases almost exponentially: by `8` threads it falls below `3%`, and by 32 threads it reaches less than `2%` relative to the single-thread baseline. 
 
-/t
-N
-	​
+This behaviour indicates that the additional threads contribute *disproportionately* to memory bandwidth saturation, cache contention, and OpenMP runtime overhead, rather than accelerating computation. In particular, operations such as the parallel reductions for CFL timestep evaluation and frequent updates of arrays (`ndx`, `ndu`, `elv`, `elrho`) exacerbate contention for shared memory resources, causing exponential growth in runtime. One can conclude then that an exponential decrease in efficiency manifests as an exponential *increase* in wall-clock time.
 
-, which declines sharply with increasing thread count. Efficiency falls below `10%` for thread counts greater than `14`, and by `32` threads it reaches only 2.8% relative to the single-thread baseline. The near-exponential decline in efficiency demonstrates that, despite the theoretically constant per-thread workload, the solver is increasingly limited by memory bandwidth saturation, cache contention, and OpenMP runtime overheads, particularly during reduction operations such as the evaluation of the minimum CFL timestep. -->
+# Summary and conclusion 
+
+The performance analysis of the parallel solver demonstrates the balance between parallelism, hardware characteristics, and practical limitations of shared-memory computation. 
+
+Strong scaling studies revealed that execution time decreases with increasing thread count up to a practical limit of `~15` threads, beyond which the benefits of parallelism are dominated by inherently serial regions of the code, memory access latency, and threading overhead. Speedup analysis confirms that the maximum acceleration achieved with OpenMP is approximately threefold, consistent with Amdahl’s Law, which identifies `~28%` of the workload as serial.
+
+Weak scaling results further illuminate the constraints imposed by memory hierarchy and inter-thread contention. While the solver maintains near-ideal scaling for small to moderate thread counts, execution time grows rapidly and efficiency declines almost exponentially for large numbers of threads, even with constant work per thread. This indicates that additional threads contribute disproportionately to overhead rather than computation, highlighting the dominant influence of cache utilisation, memory bandwidth, and reduction synchronisation in limiting scalability.
+
+Taken together, these results provide a quantitative benchmark for the solver’s parallel performance and establish clear guidelines for future optimisation. High parallel efficiency is attainable when each thread is assigned a sufficiently large workload.
