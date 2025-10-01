@@ -1,5 +1,6 @@
 - [Testing and optimising the performance of the numerical scheme](#testing-and-optimising-the-performance-of-the-numerical-scheme)
-  - [Strong scaling analysis](#strong-scaling-analysis)
+  - [Scaling analysis](#scaling-analysis)
+- [Determining efficiency of the code](#determining-efficiency-of-the-code)
 
 # Testing and optimising the performance of the numerical scheme
 
@@ -10,24 +11,47 @@ Now that we are satisfied the code has been suitably parallelised, the task now 
 
 From this, we can then make estimates of the efficiency, speedup and much more. 
 
-## Strong scaling analysis
+## Scaling analysis
 
 One (if not the most) critical aspect of our work involved the determination of the point at which the performance of the code either plateaus or begins to decrease with respect to the number of processor threads allocated to the task. To do this, the code was compiled with the `-fopenmp` flag it was decided to test it with the following parameters 
 
 1. Fixed cell count of `100,000`
 2. Varied thread count from `1` to `32`
 
-There are many ways to measure the time of execution however for the sake of simplicity, we elected to delegate this task to a Python script (please cf. with `benchmark_threads.py`) which made use of the `subprocess` library to handle the execution. This script adopted the following workflow 
+There are many ways to measure the time of execution however for the sake of simplicity, we elected to delegate this task to a Python script (please cf. with `benchmark_threads.py` and `benchmark_cells.py`) which made use of the `subprocess` library to handle the execution. This script adopted the following workflow 
 
 1. Define the path to the executable and output files
-2. Initialise the cell count
+2. Initialise the parameters 
+3. Set OpenMP environment variable:
+   ```python
+   env = os.environ.copy()
+   env["OMP_NUM_THREADS"] = str(threads)
+   ```
+4. Run the executable using subprocess.run while suppressing stdout/stderr:
+   ```python
+   with open(os.devnull, 'w') as fnull:
+      subprocess.run([executable, str(num_cells)], env=env, stdout=fnull, stderr=fnull)
+   ```
+5. Measure wallclock execution time
+6. Write to csv.
+
+# Determining efficiency of the code
+
+The easiest and most logical method available to us is to simply run the code for an array of different thread counts whilst keeping the number of cells fixed (`100,000` to be precise). From this, one can readily plot execution time as a function of the number of threads as below:
+
+<p align="center">
+<img src="img/plot100kcellsvarthreads.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 1: thread count vs execution time. </center>
 
 
-Devise an analysis script that 
+We can readily see that performance (excluding some fluctuations in the order of 5-8s) steadily (exponentially) decreases until reaching an almost plateau-like stablility at 15 threads (where the execution time dips below 60 seconds). We can therefore make the straightforward observation that past 15 threads, one does **not** see an increase in performance- this is therefore our **scaling limit**. 
 
-1. Plots a realisation 
-2. plots thread count vs time
-3. 
+One leading cause of this is due to the fact that some of the code can only be executed in serial (we shall estimate this fraction later)- therefore adding more threads will not offer any benefit. One also has to account for the fact that, in terms of computing, this is a relatively small problem and the delays caused by communication overheads between e.g., nodes or the Lustre file system quickly diminish any gains offered by increasing the thread count. 
+
+<p align="center">
+<img src="../img/plot100kcellsefficiency.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 1: thread count vs execution time. </center>
+
 
 <!-- # Performance Analysis Plan for Sod Shock Tube Solver
 
