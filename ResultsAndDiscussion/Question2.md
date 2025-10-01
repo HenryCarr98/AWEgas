@@ -112,3 +112,42 @@ We see from this above analysis that the code is approximately `72%` of our work
 
 
 ## Weak Scaling 
+
+The weak scaling results are analysed by plotting the total wall-clock time as a function of the thread count. Ideally, in a perfectly scalable solver, the runtime remains constant as the problem size increases proportionally to the number of threads, reflecting the absence of inter-thread bottlenecks. Deviations from ideal scaling are interpreted in terms of load imbalance, cache contention, and memory bandwidth limitations. 
+
+The results indicate near-ideal weak scaling for low to moderate thread counts, with slight departures for higher thread counts attributable to increased memory traffic and reduced per-thread cache utilisation. The analysis demonstrates that the solver maintains high parallel efficiency for dense Lagrangian meshes up to 100,000 cells distributed over 15–16 threads, providing a solid foundation for future investigations of multi-dimensional extensions and high-resolution shock-dominated flows.
+
+<p align="center">
+<img src="../img/weakscaling_TE.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 4: Wall-clock execution time as a function of OpenMP threads, with the total number of mesh cells increasing proportionally to maintain a constant workload of 3,125 cells per thread. </center>
+
+Fig. 4. Shows the result of the weak-scaling analysis where the number of cells was held constant at `3,125` per thread. This analysis was intended to examine how the performance *scales* with respect to problem size **and** thread count. Even with ideal weak scaling (constant work per thread), shared-memory parallelism is rarely perfect: memory bandwidth, cache size, and threading overhead make the wall-clock time increase gradually as you add threads.
+
+For thread counts up to approximately `1–10`, execution time increases roughly linearly with total problem size, indicating that the solver effectively distributes the workload and that memory bandwidth and cache effects remain manageable. 
+
+Beyond this regime, however, runtime grows more rapidly, displaying a near-exponential trend, which becomes noticeable for thread counts exceeding `20`. E.g., whilst the runtime for `16` threads (`50,000` cells) is `16.6s`, doubling the thread count to `32` (`100,000` cells) increases the runtime to `58.6s`; more than a **threefold** increase, even though each thread handles the same number of cells.
+
+
+<p align="center">
+<img src="../img/weakscaling_Efficiency.png" alt="drawing" style="width:640px;centered"/>
+<center>Fig. 5: Efficiency vs. OpenMP threads, with the total number of mesh cells increasing proportionally to maintain a constant workload of 3,125 cells per thread. </center>
+
+
+<!-- This behaviour is mirrored in the weak scaling efficiency, defined as 
+
+𝐸
+=
+𝑡
+1
+/
+𝑡
+𝑁
+E=t
+1
+	​
+
+/t
+N
+	​
+
+, which declines sharply with increasing thread count. Efficiency falls below `10%` for thread counts greater than `14`, and by `32` threads it reaches only 2.8% relative to the single-thread baseline. The near-exponential decline in efficiency demonstrates that, despite the theoretically constant per-thread workload, the solver is increasingly limited by memory bandwidth saturation, cache contention, and OpenMP runtime overheads, particularly during reduction operations such as the evaluation of the minimum CFL timestep. -->
